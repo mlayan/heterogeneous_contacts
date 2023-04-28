@@ -3,17 +3,15 @@
 #######################################################################
 
 rm(list = ls())
-#library(RColorBrewer)
 library(tidyverse)
 library(ggpubr)
-#library(rlang)
-#library(ggridges)
 
 # Color scheme
 cols2 = c("correct" = "royalblue4", "incorrect" = "lightsalmon")
 
 # Model parameters
 alpha = 1e-3
+nSimulations = 100
 
 # Load post-processing files-------------------------
 cond = "flu_covid" 
@@ -187,7 +185,7 @@ covid_pp[[3]] = post_dist %>%
   theme(plot.title = element_text(hjust = 0.5, size = 12),
         axis.title.y = element_text(size = 10)) +
   labs(x = "", y = "Density", title = expression(mu[sus-adult]), col = "") +
-  xlim(c(0,3.5))
+  xlim(c(0,4.0))
 
 covid_pp[[4]] = post_dist %>%
   ggplot(., aes(x = rInfSC)) +
@@ -223,7 +221,7 @@ ggsave(paste0("figures/alpha_",cond,"_estimates.png"), a_estimate, width = 8, he
 alpha_stats = estimates %>%
   filter(param == "alpha") %>%
   group_by(correct_inference, combination) %>%
-  summarise(calibration = sum(q2_5<=alpha & alpha<=q97_5)/10,
+  summarise(coverage = sum(q2_5<=alpha & alpha<=q97_5)*100/nSimulations,
             error = mean((median-alpha)/alpha)*100,
             .groups = "drop_last")
 
@@ -237,14 +235,14 @@ a_err = alpha_stats %>%
   labs(x = "", y = "Relative bias", col = "", title = "Alpha") 
 
 a_cal = alpha_stats %>%
-  ggplot(., aes(x = correct_inference, y = calibration, fill = correct_inference)) +
+  ggplot(., aes(x = correct_inference, y = coverage, fill = correct_inference)) +
   facet_grid(col = vars(combination)) +
   geom_bar(stat="identity") +
   scale_fill_manual(values =cols2) +
   theme_light() +
   theme(legend.position = "none") + 
   ylim(c(0,100)) +
-  labs(x = "", y = "Calibration", title = "Alpha") 
+  labs(x = "", y = "Coverage", title = "Alpha") 
 
 a = ggarrange(a_err, a_cal, nrow = 2)
 ggsave(paste0("figures/alpha_",cond,"_stats.png"), a, width = 5, height = 8)
@@ -272,8 +270,9 @@ for (disease in c("flu", "covid")) {
     mutate(b = ifelse(combination == "flu", 2*0.35*1.31/(2*1), 2*0.14*1.31/(0.8*0.5))) %>%
     group_by(correct_inference, data) %>%
     summarise(
-      calibration = sum(q2_5<=b & b<=q97_5)/10,
-      error = mean((median-b)/b)*100
+      coverage = sum(q2_5<=b & b<=q97_5)*100/nSimulations,
+      error = mean((median-b)/b)*100,
+      .groups = "drop"
     )
   
   plots[[4]] = b_df %>%
@@ -282,17 +281,17 @@ for (disease in c("flu", "covid")) {
     scale_fill_manual(values = cols2) +
     theme_light() +
     theme(legend.position = "none") + 
-    ylim(c(-30,30)) +
+    ylim(c(-31,31)) +
     labs(x = "", y = "Mean relative bias") 
   
   plots[[7]] = b_df %>%
-    ggplot(., aes(x = correct_inference, y = calibration, fill = correct_inference)) +
+    ggplot(., aes(x = correct_inference, y = coverage, fill = correct_inference)) +
     geom_bar(stat ="identity", width = 0.3) +
     scale_fill_manual(values = cols2) +
     theme_light() +
     ylim(c(0,100)) +
     theme(legend.position = "none") + 
-    labs(x = "", y = "Calibration") 
+    labs(x = "", y = "Coverage") 
   
   # rSC and rInfSC 
   i=2
@@ -318,8 +317,9 @@ for (disease in c("flu", "covid")) {
              rInfSC = ifelse(combination == "flu", 1, 0.8)) %>%
       group_by(correct_inference, data) %>%
       summarise(
-        calibration = sum(q2_5<=!!sym(p) & !!sym(p)<=q97_5)/10,
-        error = mean((median-!!sym(p))/!!sym(p))*100
+        coverage = sum(q2_5<=!!sym(p) & !!sym(p)<=q97_5)*100/nSimulations,
+        error = mean((median-!!sym(p))/!!sym(p))*100, 
+        .groups = "drop"
       )
     
     plots[[i+3]] = r_df %>%
@@ -332,13 +332,13 @@ for (disease in c("flu", "covid")) {
       labs(x = "", y = "Mean relative bias") 
     
     plots[[i+6]] = r_df %>%
-      ggplot(., aes(x = correct_inference, y = calibration, fill = correct_inference)) +
+      ggplot(., aes(x = correct_inference, y = coverage, fill = correct_inference)) +
       geom_bar(stat = "identity", width = 0.3) +
       scale_fill_manual(values = cols2) +
       theme_light() +
       theme(legend.position = "none") + 
       ylim(c(0,100)) +
-      labs(x = "", y = "Calibration") 
+      labs(x = "", y = "Coverage") 
     
     i=3
   }
@@ -353,41 +353,53 @@ for (disease in c("flu", "covid")) {
 
 
 # Summary statistics--------------------------------------
-estimates %>%
+# FOI in a father-mother pair
+beta_tab = estimates %>%
   filter(param == "beta") %>%
   mutate(p = ifelse(combination == "flu", 2*0.35*1.31/(2*1), 2*0.14*1.31/(0.8*0.5))) %>%
-  group_by(correct_inference, combination) %>%
+  group_by(param, correct_inference, combination) %>%
   summarise(
-    calibration = sum(q2_5<=p & p<=q97_5)/10,
-    error = mean((median-p)/p)*100
+    coverage = sum(q2_5<=p & p<=q97_5)*100/nSimulations,
+    error = mean((median-p)/p)*100, 
+    .groups = "drop"
   )
 
-estimates %>%
+# Relative susceptibility of children
+rSC_tab = estimates %>%
   filter(param == "rSC") %>%
   mutate(rSC = ifelse(combination == "flu", 2, 0.5), 
          rInfSC = ifelse(combination == "flu", 1, 0.8)) %>%
-  group_by(correct_inference, param, combination) %>%
+  group_by(param, correct_inference, combination) %>%
   summarise(
-    calibration = sum(q2_5<=rSC & rSC<=q97_5)/10,
-    error = mean((median-rSC)/rSC)*100
+    coverage = sum(q2_5<=rSC & rSC<=q97_5)*100/nSimulations,
+    error = mean((median-rSC)/rSC)*100, 
+    .groups = "drop"
   )
 
-estimates %>%
+# Relative infectivity of children
+rInfSC_tab = estimates %>%
   filter(param == "rInfSC") %>%
   mutate(rSC = ifelse(combination == "flu", 2, 0.5), 
          rInfSC = ifelse(combination == "flu", 1, 0.8)) %>%
-  group_by(correct_inference, param, combination) %>%
+  group_by(param, correct_inference, combination) %>%
   summarise(
-    calibration = sum(q2_5<=rInfSC & rInfSC<=q97_5)/10,
-    error = mean((median-rInfSC)/rInfSC)*100
+    coverage = sum(q2_5<=rInfSC & rInfSC<=q97_5)*100/nSimulations,
+    error = mean((median-rInfSC)/rInfSC)*100, 
+    .groups = "drop"
   )
 
-estimates %>%
+# Probability of transmission in a father-mother pair
+pInf_tab = estimates %>%
   filter(param == "pInf") %>%
   mutate(p = ifelse(combination == "flu", 1-exp(-2*0.35*1.31/(2*1)), 1-exp(-2*0.14*1.31/(0.8*0.5)))) %>%
-  group_by(correct_inference, combination) %>%
+  group_by(param, correct_inference, combination) %>%
   summarise(
-    calibration = sum(q2_5<=p & p<=q97_5)/10,
-    error = mean((median-p)/p)*100
+    coverage = sum(q2_5<=p & p<=q97_5)*100/nSimulations,
+    error = mean((median-p)/p)*100, 
+    .groups = "drop"
   )
+
+# Save all 
+rbind(beta_tab, pInf_tab, rSC_tab, rInfSC_tab) %>%
+  write.table("figures/summary_statistics.txt", sep = "\t", row.names = F, quote = F)
 

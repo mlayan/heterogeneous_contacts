@@ -1,0 +1,17 @@
+param	correct_inference	combination	coverage	error
+beta	correct	covid	93	3.81914774023036
+beta	correct	flu	92	2.89071767837498
+beta	incorrect	covid	0	30.0367720211364
+beta	incorrect	flu	45	18.9503131487733
+pInf	correct	covid	93	2.21989157351141
+pInf	correct	flu	92	2.16507022946533
+pInf	incorrect	covid	0	15.9301259911171
+pInf	incorrect	flu	45	14.1652363225003
+rSC	correct	covid	96	-3.80916984163698
+rSC	correct	flu	91	-4.37332876185805
+rSC	incorrect	covid	9	-24.2585453159328
+rSC	incorrect	flu	32	-18.1308627049959
+rInfSC	correct	covid	94	2.55719439298317
+rInfSC	correct	flu	89	6.78543965031241
+rInfSC	incorrect	covid	14	-24.3841472562706
+rInfSC	incorrect	flu	85	-8.431281155212
