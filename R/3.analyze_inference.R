@@ -3,12 +3,11 @@
 #######################################################################
 
 rm(list = ls())
-library(RColorBrewer)
+#library(RColorBrewer)
 library(tidyverse)
 library(ggpubr)
-library(rlang)
-library(coda)
-library(ggridges)
+#library(rlang)
+#library(ggridges)
 
 # Color scheme
 cols2 = c("correct" = "royalblue4", "incorrect" = "lightsalmon")
