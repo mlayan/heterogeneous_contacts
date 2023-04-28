@@ -11,7 +11,7 @@ cols2 = c("correct" = "royalblue4", "incorrect" = "lightsalmon")
 
 # Model parameters
 alpha = 1e-3
-nSimulations = 100
+nSimulations = 20
 
 # Load post-processing files-------------------------
 cond = "flu_covid" 
