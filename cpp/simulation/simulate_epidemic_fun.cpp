@@ -78,7 +78,6 @@ void test() {
 // [[Rcpp::export]]
 double incubPeriod_g() {
 	double d = rgamma(1, shape_incub_g, scale_incub_g)[0];
-	//while(d<1) d = rgamma(1, shape_incub_g, scale_incub_g)[0];
 	return d;
 }
 

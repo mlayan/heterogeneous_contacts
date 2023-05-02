@@ -106,15 +106,12 @@ std::vector<Household> buildData(std::string dataFile, std::string contact_patte
 //----------------------------------------------------------------------
 void runMCMC(McmcObject mcmc,
              std::string outputFile,
-             std::string augmentedDataFile,
              int pas,
-             /*int pasPrinting,*/
              std::vector<int> idOfSelectedParameter,
              std::vector<std::string> paramNames
 )
 {
 	ofstream output(outputFile.c_str());
-    //ofstream augmentedData(augmentedDataFile.c_str());
 
 	int iteration, iter, parID;
 	int numberOfIteration = int(mcmc.iteration() / pas);
@@ -140,15 +137,6 @@ void runMCMC(McmcObject mcmc,
         output << mcmc.parameter(i) << " 0 0 ";
     output << "0 0" << endl;
 
-    // for (size_t i = 0; i < mcmc.getNumbHH(); i++)
-    //     augmentedData << mcmc.getIndId(i);
-    // augmentedData << endl;
-
-    // for (size_t i = 0; i < mcmc.getNumbHH(); i++)
-    //     augmentedData << mcmc.getAugmentedDataHH(i);
-    // augmentedData << endl;
-
-
     // Chain
 	for (iteration = 0; iteration < numberOfIteration; iteration++)
 	{
@@ -167,25 +155,19 @@ void runMCMC(McmcObject mcmc,
                 mcmc.update_augmented_infection_times(); // Update loglik at the household level
                 mcmc.update_augmented_symptom_onset();
 			}
-            //cout << iteration * pas + iter << " " << mcmc.globalLogLik() << endl;
 		}
 
 		// Write log likelihood, parameter values, number of proposed/accepted move per parameter in the output file
 		output << (iteration + 1) * pas << " " << mcmc.globalLogLik() << " "; // Log likelihood
-        //cout << (iteration + 1) * pas << " " << mcmc.globalLogLik() << " "; // Log likelihood
 
 		for (size_t i = 0; i < mcmc.nParameters(); i++)
             output << mcmc.parameter(i) << " " << mcmc.proposedMove(i) << " " << mcmc.acceptedMove(i) << " ";
 
         output << mcmc.proposedMoveData() << " " << mcmc.acceptedMoveData() << endl;
 
-        // for (size_t i = 0; i <mcmc.getNumbHH(); i++)
-        //     augmentedData << mcmc.getAugmentedDataHH(i);
-        // augmentedData << endl;
 	}
 
 	output.close();
-    // augmentedData.close();
 }
 
 
@@ -211,32 +193,14 @@ int main(int argc, char **argv)
 
     //==========Model parameters==========
     // Initial values
-    std::vector<std::string> parameterNames = {"alpha", "beta", "delta", "rSC", "rInfAA", "rInfAC", "rInfSC"};
-    //                                            0        1        2      3        4        5           6
+    std::vector<std::string> parameterNames = {"alpha", "beta", "rSC", "rInfSC"};
+    //                                            0        1      2        3
     
     int numberOfParameters = parameterNames.size();
     std::vector<double> parameter(numberOfParameters);
 
     // Parameters to infer according to model
     std::vector<int> selectedParameter(numberOfParameters, 1);
-    
-    //parameter[0] = 0.001;
-    //selectedParameter[0] = 0;
-    
-    //parameter[1] = 0.6;
-    //selectedParameter[1] = 0;
-
-    parameter[2] = 1.0;
-    selectedParameter[2] = 0;
-
-    parameter[4] = 1;
-    selectedParameter[4] = 0;
-    
-    parameter[5] = 1;
-    selectedParameter[5] = 0;
-
-    //parameter[6] = 1;
-    //selectedParameter[5] = 0;
 
 	int parameterNumber;
 	std::vector<int> idOfSelectedParameter(0);
@@ -252,21 +216,8 @@ int main(int argc, char **argv)
 
 
     //==========MCMC parameters==========
-    /*    
-    typedef std::chrono::high_resolution_clock myclock;
-    myclock::time_point beginning = myclock::now();
-    myclock::duration d = myclock::now() - beginning;
-    unsigned seed = d.count();
-    unsigned seed;
-    if ( chainID == "1" ) seed=20201208;
-    if ( chainID == "2" ) seed=20210415;
-    if ( chainID == "3" ) seed=20210601;
-    cout << "Seed: " << seed << endl;
-    */
-
     int pas = 40; 
     int numberOfIteration = 50000;
-    //int nAdaptiveSteps = pas * numberOfIteration / 4;   // Doesn't work much...
     int nAdaptiveSteps = 0;
     int numberOfIterationTimeInfection = 1;
 
@@ -274,13 +225,13 @@ int main(int argc, char **argv)
     std::vector<double> rateForRandomWalk(numberOfParameters);
 
     if (param_combination == "flu") {
-        rateForRandomWalk = { 1.0,  0.2,  0.3,   0.3,    1.5,    0.5,    0.25};
-        //                  alpha   beta delta   rSC    rInfAA  rInfAC  rInfSC   
+        rateForRandomWalk = { 1.0,  0.2,  0.3,  0.25};
+        //                  alpha   beta  rSC  rInfSC   
     }
 
     if (param_combination == "covid") {
-        rateForRandomWalk = { 1.0,  0.2,  0.3,   0.22,    1.5,    0.5,    0.22};
-        //                  alpha   beta delta   rSC    rInfAA  rInfAC  rInfSC
+        rateForRandomWalk = { 1.0,  0.2,    0.22,   0.22};
+        //                  alpha   beta    rSC     rInfSC
     }
     
     
@@ -288,35 +239,22 @@ int main(int argc, char **argv)
     //==========Output files==========
     //Paths
     std::string condition;
-    std::string dataFile, outputFile, augmentedDataFile; 
+    std::string dataFile, outputFile; 
 
+    if (data_contact == "homogeneous" && inference_contact == "homogeneous") condition = "homo_homo";
+    if (data_contact == "homogeneous" && inference_contact == "heterogeneous") condition = "homo_hetero";
+    if (data_contact == "heterogeneous" && inference_contact == "homogeneous") condition = "hetero_homo";
+    if (data_contact == "heterogeneous" && inference_contact == "heterogeneous") condition = "hetero_hetero";
 
-    if (nSim == "recover") {
-        //Data file
-        // File structure :         0: indid, 1: hhid, 2: hhsize, 3: dds, 4: case, 5: studyPeriod, 6: adult
-        dataFile="/pasteur/appa/homes/maylayan/MMMICovid/Contacts/data/recover.txt";        //Input file 
-        outputFile="/pasteur/appa/homes/maylayan/MMMICovid/Contacts/results/mcmc_" + nSim + "_" + inference_contact + ".txt"; //Output file
-        augmentedDataFile="/pasteur/appa/homes/maylayan/MMMICovid/Contacts/results/augmented_data_" + nSim + "_" + inference_contact + ".txt"; //Output file
-
-
-    } else {
-
-        if (data_contact == "homogeneous" && inference_contact == "homogeneous") condition = "homo_homo";
-        if (data_contact == "homogeneous" && inference_contact == "heterogeneous") condition = "homo_hetero";
-        if (data_contact == "heterogeneous" && inference_contact == "homogeneous") condition = "hetero_homo";
-        if (data_contact == "heterogeneous" && inference_contact == "heterogeneous") condition = "hetero_hetero";
-
-        std::string pathData="/pasteur/appa/homes/maylayan/MMMICovid/Contacts/data/" + param_combination + "/" + data_contact + "/";
-        std::string pathOutput="/pasteur/appa/homes/maylayan/MMMICovid/Contacts/results/" + param_combination + "/" + condition + "/";
-        
-        fs::create_directories(pathOutput);
-        
-        // Data file
-        // File structure :         0: indid, 1: hhid, 2: hhsize, 3: dds, 4: case, 5: studyPeriod, 6: adult
-        dataFile=pathData + "data_" + nSim + ".txt";                         //Input file
-        outputFile=pathOutput + "mcmc_" + nSim + ".txt";                    //Output file
-        augmentedDataFile=pathOutput + "augmented_data_" + nSim + ".txt";                    //Output file
-    }
+    std::string pathData="data/" + param_combination + "/" + data_contact + "/";
+    std::string pathOutput="results/" + param_combination + "/" + condition + "/";
+    
+    fs::create_directories(pathOutput);
+    
+    // Data file
+    // File structure :         0: indid, 1: hhid, 2: hhsize, 3: dds, 4: case, 5: studyPeriod, 6: adult
+    dataFile=pathData + "data_" + nSim + ".txt";                         //Input file
+    outputFile=pathOutput + "mcmc_" + nSim + ".txt";                    //Output file
 
     
     cout << "Input file: " << dataFile << endl;
@@ -348,7 +286,6 @@ int main(int argc, char **argv)
     runMCMC(
         mcmc,
         outputFile,
-        augmentedDataFile,
         pas,
         idOfSelectedParameter,
         parameterNames

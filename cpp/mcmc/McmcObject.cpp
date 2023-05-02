@@ -63,7 +63,6 @@ McmcObject::McmcObject(
 	m_proposedMoveData = 0;
 
     // Copy input vectors
-    //m_gen.seed(seed);
     m_gen.seed(std::random_device{}());
     cout << "Seed: " << m_gen() << endl;
 
@@ -99,11 +98,7 @@ void McmcObject::initial_param_values() {
                 m_parameter[parID] = runif(m_gen, 0.0, 10.0); 
                 break;
 
-            case 2: // delta - Uniform(-3,3)
-                m_parameter[parID] = runif(m_gen, -3.0, 3.0); 
-                break;
-
-            case 3:
+            case 2:
                 if ( m_lnormSPrior ) { // rSC - LogNormal(0,sd)
                     m_parameter[parID] = rlnorm(m_gen, 0.0, m_sdLNormSPrior);   
                 } else {                // rSC - Uniform(0,5)
@@ -111,23 +106,7 @@ void McmcObject::initial_param_values() {
                 } 
                 break;
 
-            case 4:
-                if ( m_lnormInfPrior ) {// rInfAA - LogNormal(0,sd)
-                    m_parameter[parID] = rlnorm(m_gen, 0.0, m_sdLNormInfPrior);   
-                } else {            // rInfAA - Uniform(0,5)
-                    m_parameter[parID] = runif(m_gen, 0.0, 5.0);
-                } 
-                break;
-
-            case 5:
-                if ( m_lnormInfPrior ) { // rInfAC - LogNormal(0,sd)
-                    m_parameter[parID] = rlnorm(m_gen, 0.0, m_sdLNormInfPrior);
-                } else {                // rInfAC - Uniform(0,5)
-                    m_parameter[parID] = runif(m_gen, 0.0, 5.0);
-                }
-                break;
-
-            case 6:
+            case 3:
                 if ( m_lnormInfPrior ) { // rInfSC - LogNormal(0,sd)
                     m_parameter[parID] = rlnorm(m_gen, 0.0, m_sdLNormInfPrior);            
                 } else {                // rInfSC - Uniform(0,5)
@@ -161,14 +140,12 @@ void McmcObject::initialize_augmented_data() {
         int nInd = m_data[house].getSize();
         for (ind=0; ind<nInd; ind++) {
             int display = 0;
-            //if (house == 30) display=1;
             m_data[house].initialOnsetTime(ind, m_gen, display);
             m_data[house].initialInfTime(ind, m_maxPCRDetectability, m_gen, display);
         }
 
         // Compute person-to-person transmission rate within household
         int display = 0;
-        //if (house == 2) display = 1;
         m_data[house].compute_infectivity_profiles(display);
 
     }
@@ -182,16 +159,10 @@ void McmcObject::initial_log_lik() {
     cout << m_parameter[1] << endl;
     for (house=0; house < m_nHH; house++) {
         int display = 0;
-        //if (house == 0) display = 1;
         m_hhLogLik[house] = m_data[house].compute_log_lik(m_parameter, m_selectedParam, m_maxPCRDetectability, display);
-        //if (house == 0 || house  == 2) cout << "House " << house << ": " << m_hhLogLik[house] << endl;
-        //cout << "House " << house << ": " << m_hhLogLik[house] << endl;
         m_globalLogLik += m_hhLogLik[house];
         nCases += m_data[house].nSymptomatic();
     }
-
-/*    cout << nCases << endl;
-    cout << m_data.size() << endl;*/
 }
 
 
@@ -224,11 +195,7 @@ void McmcObject::update_parameter(int parID, double step) {
             //logRatioPrior = logdexp(newValue, 0.001) - logdexp(oldValue, 0.001); 
         	break;
 
-        case 2: // delta - Uniform(-3,3)
-            if (newValue > 3 || newValue < -3) logRatioPrior = log(0); 
-            break;
-
-        case 3:
+        case 2:
         	if (m_lnormSPrior) {  // rSC - LogNormal(0,sd)
                 logRatioPrior = logdlnorm(newValue, 0.0, m_sdLNormSPrior) - logdlnorm(oldValue, 0.0, m_sdLNormSPrior);
             } else {               // rSC - Uniform(0,5)
@@ -236,23 +203,7 @@ void McmcObject::update_parameter(int parID, double step) {
             }
         	break;
 
-        case 4:
-            if (m_lnormInfPrior) { // rInfAA - LogNormal(0,sd)
-                logRatioPrior = logdlnorm(newValue, 0.0, m_sdLNormInfPrior) - logdlnorm(oldValue, 0.0, m_sdLNormInfPrior);
-            } else {                // rInfAA - Uniform(0,5)
-                if (newValue > 5 || newValue < 0) logRatioPrior = log(0);
-            }
-            break;
-
-        case 5:
-            if (m_lnormInfPrior) { // rInfAC - LogNormal(0,sd)
-                logRatioPrior = logdlnorm(newValue, 0.0, m_sdLNormInfPrior) - logdlnorm(oldValue, 0.0, m_sdLNormInfPrior);
-            } else {                // rInfAC - Uniform(0,5)
-                if (newValue > 5 || newValue < 0) logRatioPrior = log(0);
-            }            
-            break;
-
-        case 6:
+        case 3:
             if (m_lnormInfPrior) { // rInfSC - LogNormal(0,sd)
                 logRatioPrior = logdlnorm(newValue, 0.0, m_sdLNormInfPrior) - logdlnorm(oldValue, 0.0, m_sdLNormInfPrior);
             } else {                // rInfSC - Uniform(0,5)
@@ -269,14 +220,9 @@ void McmcObject::update_parameter(int parID, double step) {
     size_t house;
     for (house=0; house < m_nHH; house++) {
         int display = 0;
-        //if (house == 0) display = 1;
         newLogLikHH[house] = m_data[house].compute_log_lik(m_parameter, m_selectedParam, m_maxPCRDetectability, display);        
-        //cout << newValue << " - house " << house << ": " << newLogLikHH[house] << endl;
-        //if (house == 0 || house  == 2) cout << "House " << house << ": " << newLogLikHH[house] << " - " << parID << ": " << newValue << endl;
         newLogLikGlobal += newLogLikHH[house];
     }
-
-    //cout << m_parameter[parID] << endl;
 
 	// Update log likelihood
 	double Q = newLogLikGlobal - m_globalLogLik + logRatioProposal + logRatioPrior;
@@ -325,18 +271,11 @@ void McmcObject::update_augmented_infection_times() {
             double oldValue = m_data[house].getSpInfTime(inf);
             double newValue = m_data[house].newInfTime(inf, m_maxPCRDetectability, m_gen);
 
-            // Log ratio of the proposal (independent proposal) 
-            // double oldProposal = m_data[house].log_dIncub(inf, m_maxPCRDetectability, display);
-            // double newProposal = m_data[house].log_dIncub(inf, m_maxPCRDetectability, display);
-            // double logRatioProposal = oldProposal-newProposal;
-
             // Update infection time and person-to-person transmission rates
             m_data[house].setInfTime(inf, newValue);
             m_data[house].update_infectivity_profiles(inf, display);   
             
             // Log likelihood
-/*            double differenceLogLik(0.0);
-            double newLogLikOfHH(0.0);*/
             double newLogLikOfHH = m_data[house].compute_log_lik(m_parameter, m_selectedParam, m_maxPCRDetectability, display);
             double currentLogLik = m_hhLogLik[house];
             double differenceLogLik = newLogLikOfHH - currentLogLik;

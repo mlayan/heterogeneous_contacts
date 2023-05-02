@@ -44,7 +44,6 @@ public:
 	Household();
 	Household(std::string contact_pattern);
 	~Household() {};
-	// int getStudyPeriod() const { return m_studyPeriod; };
 	
 	size_t getSize() const { return m_size; };
 	size_t nInfected() const { return m_confCase.size(); };

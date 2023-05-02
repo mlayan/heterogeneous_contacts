@@ -10,7 +10,6 @@
 using namespace std;
 
 // Constant parameters
-// double maxPCRDetectability = 15.0;
 double mGamma = 26.1;
 double vGamma = 7.0;
 double shift = 25.6;
@@ -40,24 +39,12 @@ double infectivityProfile(
 
   // Density
   double out = 0.0;
-  //double normCons = 1 - pgamma(shift - (origin-infectionDate), shapeInf, scaleInf);
 
   if (infectionStatus == 1) { // Symptomatic infector
     if (infectionDate < studyPeriod && infectionDate < tinf) {
-      //out = dgamma(shift + (tinf-origin), shapeInf, scaleInf);
-      //out /= normCons;
-      //out = dgamma(tinf - infectionDate, shape_gt, scale_gt);
       out = dtost(tinf-origin, origin-infectionDate); 
     }
-   
-
-  } else { // Asymptomatic infector
-    if ( infectionDate + 2.0 < studyPeriod && infectionDate + 2.0 < tinf ){
-      out = dgamma(shift - 3.0 + (tinf - infectionDate - 2.0), shapeInf, scaleInf);
-      //out /= normCons;
-      //out = dgamma(tinf - infectionDate, shape_gt, scale_gt);
-    }
-  }
+  } 
 
   return out;
 }
@@ -75,23 +62,12 @@ double cumulativeInfectivity(
 
   // Cumulative infectivity profile
   double out = 0.0;
-  //double normCons = 1 - pgamma(shift - (origin-infectionDate), shapeInf, scaleInf);
 
   // Cumulative density
   if (infectionStatus == 1) { // Symptomatic infector
 
     if (infectionDate < studyPeriod && infectionDate < tinf) {
-      //out = pgamma(shift+(tinf-origin), shapeInf, scaleInf) - pgamma(shift-(origin-infectionDate), shapeInf, scaleInf);
-      //out /= normCons;
-      //out = pgamma(tinf-infectionDate, shape_gt, scale_gt);
       out = ptost(tinf-origin, origin-infectionDate); 
-    }
-
-  } else { // Asymptomatic infector
-    if ( infectionDate + 2.0 < studyPeriod && infectionDate + 2.0 < tinf ){
-      out = pgamma(shift - 3.0 + (tinf - infectionDate - 2.0), shapeInf, scaleInf) - pgamma(shift - 3.0, shapeInf, scaleInf);
-      //out /= normCons;
-      //out = pgamma(tinf-infectionDate, shape_gt, scale_gt);
     }
   }
 
@@ -206,7 +182,6 @@ void Household::addIndividual(
     }
 
   // Initialize infection time
-    //m_infTime.push_back(1000.0);
     m_infTime.push_back(ddi);
 }
 
@@ -255,16 +230,11 @@ void Household::initialInfTime(int index, double maxPCRDetectability, std::mt199
     double incubPeriod(0.0);
 
     if ( m_infected[index] == 1 ) {   // Symptomatic case 
-      //incubPeriod = rgamma(gen, shape_incub, scale_incub);
       incubPeriod = rlnorm(gen, mIncub, sdIncub);
       m_infTime[index] = m_augmentedOnsetTime[index] - incubPeriod;
 
-    } else if ( m_infected[index] == 2 ) {      // Asymptomatic case detected by PCR
-      //m_infTime[index] = runif(gen, m_augmentedOnsetTime[index] - maxPCRDetectability, m_augmentedOnsetTime[index]);
-      m_infTime[index] = m_augmentedOnsetTime[index] - runif(gen, 2.0, 7.0);
-
     } else {    // Covid-free household members or household members with unknown final outcome
-      m_infTime[index] = 1000.0; //m_studyPeriod[index];
+      m_infTime[index] = 1000.0; 
     }
 
     if (display) cout << "Inf time " << m_indid[index] << ": " << m_infTime[index] << endl;
@@ -477,13 +447,8 @@ double Household::newInfTime(int index, double maxPCRDetectability, std::mt19937
 
     if ( m_infected[index] == 1 ) {           // Symptomatic case 
 
-      //incubPeriod = rgamma(gen, shape_incub, scale_incub);
       incubPeriod = rlnorm(gen, mIncub, sdIncub);
       infDate += m_augmentedOnsetTime[index] - incubPeriod;
-
-    } else if ( m_infected[index] == 2 ) {  // Asymptomatic case detected by PCR
-      //infDate += runif(gen, m_augmentedOnsetTime[index] - maxPCRDetectability, m_augmentedOnsetTime[index]);
-      infDate += m_augmentedOnsetTime[index] - runif(gen, 2.0, 7.0);
 
     } else {    // Covid-free household members or household members with unknown final outcome
       infDate = 1000.0;
@@ -503,11 +468,6 @@ double Household::log_dIncub(int index, double maxPCRDetectability, int display)
     if ( m_infected[index] == 1 ) {       // Symptomatic case with known symptom onset 
       double incubPeriod = m_augmentedOnsetTime[index] - m_infTime[index];
       out += logdlnorm(incubPeriod, mIncub, sdIncub);
-
-    } else {   // Asymptomatic case
-      //out += log(1/maxPCRDetectability);
-      out += log(1/5.0);
-
     }
 
     if (display) cout << "log_dIncub: " << out << endl;
@@ -524,16 +484,8 @@ double Household::log_dIncub_g(int index, double maxPCRDetectability, int displa
     double out = 0.0;
 
     if ( m_infected[index] == 1 ) {       // Symptomatic case with known symptom onset 
-      //double normCons = log(1 - pgamma(1.0, shape_incub, scale_incub));
       double incubPeriod = m_augmentedOnsetTime[index] - m_infTime[index];
-      //if (incubPeriod >= 1.0) out += log(dgamma(incubPeriod, shape_incub, scale_incub)) - normCons;
-
       out += log(dgamma(incubPeriod, shape_incub, scale_incub));
-
-    } else {   // Asymptomatic case
-      //out += log(1/maxPCRDetectability);
-      out += log(1/5.0);
-
     }
 
     if (display) cout << "log_dIncub: " << out << endl;
@@ -614,7 +566,7 @@ double Household::log_pInf(
         if (display) cout << "pInf: " << curr << " " << ind << " " << beta_i << endl;
 
         // Relative infectivity of symptomatic adult cases versus symptomatic child cases
-        if ( m_infected[ind] == 1 && m_age[ind] != 2 ) beta_i *= parameter[6];
+        if ( m_infected[ind] == 1 && m_age[ind] != 2 ) beta_i *= parameter[3];
 
         // Contat pattern
         if (m_contactPattern == "heterogeneous") { // Reference = child-child pair in household of size 4 
@@ -635,10 +587,10 @@ double Household::log_pInf(
     //if (display) cout << beta << endl;
 
     // Relative susceptibility of adults
-    if ( m_age[curr] != 2 ) beta *= parameter[3];
+    if ( m_age[curr] != 2 ) beta *= parameter[2];
 
     // Instantaneous per capita transmission rate 
-    beta *= parameter[1] / pow(m_size / 4.0, parameter[2]);
+    beta *= parameter[1] / (m_size / 4.0);
 
     if (display) cout << "log_pInf: " << log( (alpha+beta) ) << endl;
 
@@ -678,7 +630,7 @@ double Household::log_S(
       if (display) cout << "S: " << curr << " " << ind << " " << beta_i << endl;
 
       // Relative infectivity of symptomatic adult cases versus symptomatic child cases
-      if ( m_infected[ind] == 1 && m_age[ind] != 2 ) beta_i *= parameter[6];
+      if ( m_infected[ind] == 1 && m_age[ind] != 2 ) beta_i *= parameter[3];
 
       // Contat pattern
       if (m_contactPattern == "heterogeneous") {
@@ -697,10 +649,10 @@ double Household::log_S(
 	}
 
   // Relative susceptibility of adults
-  if ( m_age[curr] != 2 ) beta *= parameter[3];
+  if ( m_age[curr] != 2 ) beta *= parameter[2];
 
   // Instantaneous per capita transmission rate
-  beta *= parameter[1] / pow(m_size / 4.0, parameter[2]);
+  beta *= parameter[1] / (m_size / 4.0);
 
   if (display) cout << beta << " " << alpha << endl;
   

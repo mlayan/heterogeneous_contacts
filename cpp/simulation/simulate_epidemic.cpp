@@ -25,14 +25,6 @@ DataFrame hhEpidemic(
   {
 
   // Simulate epidemic within a household
-
-  //Rcout << "Alpha: " << alpha << endl; 
-  //Rcout << "Beta 4: " << beta << endl; 
-  //Rcout << "rSC: " << rSC << endl;
-  //Rcout << "rInfSC: " << rInfC << endl;  
-  //Rcout << "Main hh size: " << mainHHSize << endl;
-  //Rcout << "Contact pattern: " << contact_pattern << endl;  
-
   // Data info
   int hhsize = H.nrows();
   IntegerVector adult = H["adult"];
@@ -59,15 +51,7 @@ DataFrame hhEpidemic(
   	infectors.push_back(ind);
 
     	if ( infectionStatus[ind] == 1 ) { // Symptomatic cases 
-    	//ddi[ind] = rIncub(dds[ind]);
-        //ddi[ind] = dds[ind] - incubPeriod();
         incub_period[ind] = incubPeriod();
-
-    	} else { // Asymptomatic index cases are detected 5 days after infection
-    	//ddi[ind] = dds[ind] - detectionPeriod2(0.0, 1.0);
-        //ddi[ind] = dds[ind] - runif(1, 2.0, 7.0)[0];
-        incub_period[ind] = runif(1, 2.0, 7.0)[0];        
-
     	}
       
       ddi[ind] = dds[ind] - incub_period[ind];
@@ -99,7 +83,6 @@ DataFrame hhEpidemic(
 
       // Probability of getting infected
       int display=0;
-      //if (n==0 && s==0) display = 1;
 
       NumericVector FOIS = foi(
         curr_time, 
