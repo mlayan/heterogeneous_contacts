@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 
     //==========MCMC parameters==========
     int pas = 40; 
-    int numberOfIteration = 50000;
+    int numberOfIteration = 70000;
     int nAdaptiveSteps = 0;
     int numberOfIterationTimeInfection = 1;
 

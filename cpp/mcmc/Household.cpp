@@ -191,8 +191,8 @@ void Household::setOnsetTime(int index, double onsetTime) {
   m_augmentedOnsetTime[index] = onsetTime;
 }
 
-void Household::setInfTime(int index, double infTime) {
-  m_infTime[index] = infTime;
+void Household::setInfTime(int index, double incubationPeriod) {
+  m_infTime[index] = m_augmentedOnsetTime[index] - incubationPeriod;
 }
 
 
