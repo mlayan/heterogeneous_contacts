@@ -50,8 +50,7 @@ public:
 	void initialize_augmented_data();
 	void initial_log_lik();
 	void update_parameter(int parID, double step);
-	void update_augmented_infection_times();
-	void update_augmented_symptom_onset();
+	void update_augmented_times();
 
 private:
 	int m_iterations;

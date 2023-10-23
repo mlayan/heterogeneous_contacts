@@ -152,8 +152,7 @@ void runMCMC(McmcObject mcmc,
 
 			// Augmented data
 			for (int i=0; i < nIterTimeInfection; i++) {
-                mcmc.update_augmented_infection_times(); // Update loglik at the household level
-                mcmc.update_augmented_symptom_onset();
+                mcmc.update_augmented_times(); // Update loglik at the household level
 			}
 		}
 

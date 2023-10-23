@@ -54,6 +54,7 @@ public:
 	std::vector<int> getAllInfected() const { return m_infected; };
 	std::vector<int> getInfectedIndex() const { return m_confCase; };
 	double getSpInfTime(int index) const { return m_infTime[index]; };
+	double getSpIncubationPeriod(int index) const { return m_augmentedOnsetTime[index]-m_infTime[index]; };
 	double getSpOnsetTime(int index) const { return m_augmentedOnsetTime[index]; };
 	std::vector<double> getAllInfTime() const { return m_infTime; };
 	int getSpId(int index) const { return m_indid[index]; };
@@ -69,6 +70,7 @@ public:
 
 	double newInfTime(int index, double maxPCRDetectability, std::mt19937_64& gen);
 	double newOnsetTime(int index, std::mt19937_64& gen);
+	double newIncubationPeriod(int index, std::mt19937_64& gen);
 	double log_dIncub(int index, double maxPCRDetectability, int display = 0);
 	double log_dIncub_g(int index, double maxPCRDetectability, int display = 0);
 

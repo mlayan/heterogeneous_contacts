@@ -440,6 +440,24 @@ double Household::newOnsetTime(int index, std::mt19937_64& gen) {
 }
 
 
+double Household::newIncubationPeriod(int index, std::mt19937_64& gen) {
+
+   double incubPeriod(0.0);
+
+    if ( m_infected[index] == 1 ) {           // Symptomatic case 
+
+      //incubPeriod = rgamma(gen, shape_incub, scale_incub);
+      incubPeriod = rlnorm(gen, mIncub, sdIncub);
+
+    } else if ( m_infected[index] == 2 ) {  // Asymptomatic case detected by PCR
+      //infDate += runif(gen, m_augmentedOnsetTime[index] - maxPCRDetectability, m_augmentedOnsetTime[index]);
+      incubPeriod = runif(gen, 2.0, 7.0);
+    }
+
+    return incubPeriod;
+
+}
+
 
 double Household::newInfTime(int index, double maxPCRDetectability, std::mt19937_64& gen) {
 
@@ -447,8 +465,13 @@ double Household::newInfTime(int index, double maxPCRDetectability, std::mt19937
 
     if ( m_infected[index] == 1 ) {           // Symptomatic case 
 
+      //incubPeriod = rgamma(gen, shape_incub, scale_incub);
       incubPeriod = rlnorm(gen, mIncub, sdIncub);
       infDate += m_augmentedOnsetTime[index] - incubPeriod;
+
+    } else if ( m_infected[index] == 2 ) {  // Asymptomatic case detected by PCR
+      //infDate += runif(gen, m_augmentedOnsetTime[index] - maxPCRDetectability, m_augmentedOnsetTime[index]);
+      infDate += m_augmentedOnsetTime[index] - runif(gen, 2.0, 7.0);
 
     } else {    // Covid-free household members or household members with unknown final outcome
       infDate = 1000.0;
@@ -456,7 +479,6 @@ double Household::newInfTime(int index, double maxPCRDetectability, std::mt19937
 
     return infDate;
 }
-
 
 
 

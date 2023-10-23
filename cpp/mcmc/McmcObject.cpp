@@ -254,7 +254,7 @@ void McmcObject::update_parameter(int parID, double step) {
 
 
 // Update augmented infection times
-void McmcObject::update_augmented_infection_times() {
+void McmcObject::update_augmented_times() {
 
     // Loop over houses
     size_t house, ind;
@@ -268,72 +268,37 @@ void McmcObject::update_augmented_infection_times() {
             int display = 0;
 
             // Independent sampler from the incubation period
-            double oldValue = m_data[house].getSpInfTime(inf);
-            double newValue = m_data[house].newInfTime(inf, m_maxPCRDetectability, m_gen);
+            double oldValueInc = m_data[house].getSpIncubationPeriod(inf);
+            double newValueInc = m_data[house].newIncubationPeriod(inf, m_gen);
+
+            // Independent sampler for symptom onset
+            double oldValueOnset = m_data[house].getSpOnsetTime(inf);
+            double newValueOnset = m_data[house].newOnsetTime(inf, m_gen);
+
+            // Log ratio of the proposal (independent proposal) 
+            double oldProposal = logdlnorm(oldValueInc, mIncub, sdIncub);
+            double newProposal = logdlnorm(newValueInc, mIncub, sdIncub);
+            double logRatioProposal = oldProposal-newProposal;
 
             // Update infection time and person-to-person transmission rates
-            m_data[house].setInfTime(inf, newValue);
-            m_data[house].update_infectivity_profiles(inf, display);   
+            m_data[house].setOnsetTime(inf, newValueOnset);
+            m_data[house].setInfTime(inf, newValueInc);
             
+            m_data[house].update_infectivity_profiles(inf, display);   
+
             // Log likelihood
-            double newLogLikOfHH = m_data[house].compute_log_lik(m_parameter, m_selectedParam, m_maxPCRDetectability, display);
             double currentLogLik = m_hhLogLik[house];
+            double newLogLikOfHH = m_data[house].compute_log_lik(m_parameter, m_selectedParam, m_maxPCRDetectability, display);
             double differenceLogLik = newLogLikOfHH - currentLogLik;
 
-            if( log(runif(m_gen)) < differenceLogLik ) {
+            if( log(runif(m_gen)) < differenceLogLik + logRatioProposal) {
                 m_globalLogLik += differenceLogLik;
                 m_hhLogLik[house] = newLogLikOfHH;
                 m_acceptedMoveData++;
 
             } else {                
-                m_data[house].setInfTime(inf, oldValue);
-                m_data[house].update_infectivity_profiles(inf);
-                
-            }
-
-            m_proposedMoveData++;
-        }
-    }
-}
-
-
-
-
-
-// Update augmented symptom onsets
-void McmcObject::update_augmented_symptom_onset() {
-
-    // Loop over houses
-    size_t house, ind;
-    for (house = 0; house<m_data.size(); ++house) {
-        std::vector<int> infected = m_data[house].getInfectedIndex();
-
-        // Loop over infected individuals
-        for (ind = 0; ind < infected.size(); ind++) {
-
-            int inf = infected[ind];
-            int display = 0;
-
-            // Independent sampler from uniform distribution [0,1]
-            double oldValue = m_data[house].getSpOnsetTime(inf);
-            double newValue = m_data[house].newOnsetTime(inf, m_gen);
-
-            // Update infection time and person-to-person transmission rates
-            m_data[house].setOnsetTime(inf, newValue);
-            m_data[house].update_infectivity_profiles(inf, display);   
-            
-            // Log likelihood
-            double newLogLikOfHH = m_data[house].compute_log_lik(m_parameter, m_selectedParam, m_maxPCRDetectability, display);
-            double currentLogLik = m_hhLogLik[house];
-            double differenceLogLik = newLogLikOfHH - currentLogLik;
-
-            if( log(runif(m_gen)) < differenceLogLik) {
-                m_globalLogLik += differenceLogLik;
-                m_hhLogLik[house] = newLogLikOfHH;
-                m_acceptedMoveData++;
-
-            } else {                
-                m_data[house].setOnsetTime(inf, oldValue);
+                m_data[house].setOnsetTime(inf, oldValueOnset);
+                m_data[house].setInfTime(inf, oldValueInc);
                 m_data[house].update_infectivity_profiles(inf);
                 
             }
