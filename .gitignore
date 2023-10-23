@@ -47,3 +47,12 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# Binaries
+cpp/mcmc/*.o
+cpp/mcmc/*.out
+
+# Bach files
+cpp/mcmc/*.sh
+
+
