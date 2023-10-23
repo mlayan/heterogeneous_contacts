@@ -1,4 +1,4 @@
-# Improving household studies of respiratory diseases transmission by using household contact data
+# Addressing current limitations of household transmission studies by collecting contact data
 
 Full text is available [here]().
 
