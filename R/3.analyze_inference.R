@@ -205,48 +205,6 @@ ggsave("figures/covid_comparison_prior_posterior.png", covid_to_save, height = 4
 ggsave("Figures/covid_comparison_prior_posterior.pdf", covid_to_save, height = 4, width = 11)
 
 
-# Plot alpha------------------------------------------
-a_estimate = estimates %>%
-  filter(param == "alpha") %>%
-  ggplot(., aes(x = correct_inference, y = median)) +
-  facet_grid(rows = vars(combination), scales = "free_y") +
-  geom_boxplot(outlier.shape = NA) +
-  geom_hline(aes(yintercept = alpha)) +
-  geom_jitter(aes(color = correct_inference)) + 
-  theme_light() +
-  theme(legend.position = "none") +
-  labs(x="", y = "", title = "Alpha")
-ggsave(paste0("figures/alpha_",cond,"_estimates.png"), a_estimate, width = 8, height = 6)
-
-alpha_stats = estimates %>%
-  filter(param == "alpha") %>%
-  group_by(correct_inference, combination) %>%
-  summarise(coverage = sum(q2_5<=alpha & alpha<=q97_5)*100/nSimulations,
-            error = mean((median-alpha)/alpha)*100,
-            .groups = "drop_last")
-
-a_err = alpha_stats %>%
-  ggplot(., aes(x = correct_inference, y = error, fill = correct_inference)) +
-  facet_grid(col = vars(combination)) +
-  geom_bar(stat="identity") +
-  scale_fill_manual(values =cols2) +
-  theme_light() +
-  theme(legend.position = "none") + 
-  labs(x = "", y = "Relative bias", col = "", title = "Alpha") 
-
-a_cal = alpha_stats %>%
-  ggplot(., aes(x = correct_inference, y = coverage, fill = correct_inference)) +
-  facet_grid(col = vars(combination)) +
-  geom_bar(stat="identity") +
-  scale_fill_manual(values =cols2) +
-  theme_light() +
-  theme(legend.position = "none") + 
-  ylim(c(0,100)) +
-  labs(x = "", y = "Coverage", title = "Alpha") 
-
-a = ggarrange(a_err, a_cal, nrow = 2)
-ggsave(paste0("figures/alpha_",cond,"_stats.png"), a, width = 5, height = 8)
-
 # Plot foi, rSC, rInfSC--------------------------------------
 for (disease in c("flu", "covid")) {
   
